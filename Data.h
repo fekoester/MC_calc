@@ -14,11 +14,11 @@ struct Data{
 	
 	string dataStringNonlinearMemorySavefile = "./data/memory"; 
 	
-	int maxPowerNonlinearMemory= 3;
+	unsigned int maxPowerNonlinearMemory= 3;
 	int momDegree = 0;
 	bool doWithoutThreshold = false;
 	double threshold = 0.0;
-	int stepsForMemory = 50;
+	unsigned int stepsForMemory = 50;
 	double regularisationFactor = 1E-6;
 	bool regularisationFactorRelative = false;
 	double totalMemoryCap = 0.0;
