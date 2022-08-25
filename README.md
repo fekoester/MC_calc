@@ -12,3 +12,6 @@ Otherwise the program uses basic C++ libraries, thus it should compile on every 
 
 After compiling, start the program with ./nameOfProgram.
 You need to have a file called "StateData" in the folder that contains the state matrix of your reservoir and a file called "inputData" that contains the random values between -1 and 1 that are the inputs of the reservoir.
+
+The output file "memoryData" contains the capacities in following order.
+The first N columns are the steps into the past, the second N columns are the order of legendre polynomials used, the next columns gives the capacity, the next N columns give the summed memory capacities of order 1 up to N and the last columns the pure memory capacities of order 1 up to N.
