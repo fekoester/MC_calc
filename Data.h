@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------------------------------------------------------------------//
 #pragma once
 #include <string>
-#include "../armadillo-9.500.2/include/armadillo"
+#include <armadillo>
 
 using namespace std;
 
