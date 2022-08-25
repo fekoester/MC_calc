@@ -6,7 +6,7 @@
 //Creates the folder if not already existing and returns the output file where the data is outputted to
 //Number is the argumentList number
 void setOutputFile(Data &data){
-    data.dataStringNonlinearMemorySavefile = "memory.txt";
+    data.dataStringNonlinearMemorySavefile = "memoryData";
 }
 
 
@@ -72,8 +72,8 @@ bool parsArguments(int argc, char** argv, Data &data){
 //------------------------------------------------------------------------------------------------------------------------------------------//
 //Load stat matrix
 void loadData(Data &data) {
-   data.stateMatrix.load("test.txt");
-   data.trainingTargetFromInputFile.load("test2.txt");
+   data.stateMatrix.load("stateData");
+   data.trainingTargetFromInputFile.load("inputData");
    data.trainingTarget = arma::Col<double>(data.stateMatrix.n_rows);
 }
 
