@@ -12,7 +12,13 @@ struct Data{
 	//------------------------------------------------------------------------------------------------------------------------------------------//
 	arma::Mat<double> stateMatrix;
 	
-	string dataStringNonlinearMemorySavefile = "./data/memory"; 
+	string dataStringNonlinearMemorySavefile = "memoryData";
+	string stateFile = "stateData";
+	string inputFile = "inputData";
+	int outputPrecision = 6;            // digits written for capacities (6 = std::ostream default, as in v0.1)
+	bool thresholdGiven = false;        // -threshold given: use it instead of the chi-squared threshold
+	double thresholdProbability = 1e-5; // v0.1 passed 10e-6 (= 1e-5)
+	double thresholdFactor = 4.0;       // v0.1: threshold = 4 * chi2 quantile / T
 	
 	unsigned int maxPowerNonlinearMemory= 3;
 	int momDegree = 0;
@@ -27,7 +33,7 @@ struct Data{
 	vector<int> numberLowMemAccLastPeak;
 	int lowMemLastLayer;
 	int lowMemLastLayerQuit = -1;
-	int numberLowMemLast = 20;
+	int numberLowMemLast = 20;          // early stop after this many sub-threshold delays (-patience; 0 = full scan)
 	
 	arma::Col<double> trainingTarget;
 	arma::Col<double> trainingTargetFromInputFile;
@@ -37,8 +43,9 @@ struct Data{
 	arma::Mat<double> pMatrix;
 	arma::Mat<double> ghsMatrix;
 	
-	vector<double> totalMemCapDegrees = vector<double>(15, 0.0);
-	vector<double> totalMemCapDegreesPure = vector<double>(15, 0.0);
+	vector<double> totalMemCapDegrees;      // sized maxPower + 1 after parsing
+	vector<double> totalMemCapDegreesPure;
+	arma::Mat<double> legendreTable;        // legendreTable(n, t) = P_n(input[t]), filled once
 
 	bool debug = false;
 

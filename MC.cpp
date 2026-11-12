@@ -25,18 +25,20 @@ void runMemoryCalculation(int argc, char** argv){
 	//------------------------------------//
 	 calcNonlinearMemory(data);
 	
-	cout <<"\n\n\n";
+
 }
 
 
 //Main
 //------------------------------------------------------------------------------------------------------------------------------------------//
 int main(int argc, char** argv)
-{  
-    //Create the outputFile and corresponding folder for the day 
-    runMemoryCalculation(argc,argv);
-
+{
+    try {
+        runMemoryCalculation(argc,argv);
+    } catch (const std::exception &e) {
+        cerr << "error: " << e.what() << endl;
+        return 1;
+    }
     cout << "Done...\n";
-    
 	return 0;
 }
