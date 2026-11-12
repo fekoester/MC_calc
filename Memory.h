@@ -8,14 +8,26 @@ using boost::math::chi_squared;
 //------------------------------------------------------------------------------------------------------------------------------------------//
 
 
-//Define legendre polynomials
+//Legendre polynomial P_n(x) by the three-term recurrence (iterative; the same values as the v0.1 recursion)
 double legendreFunction(int n, double x){
     if (n == 0)
-        return 1;
-    else if (n == 1)
-        return x;
-    else 
-        return ((2.0*n - 1.0)*x*legendreFunction(n-1, x) - (n -1.0)*legendreFunction(n-2, x))/n;
+        return 1.0;
+    double p0 = 1.0, p1 = x;
+    for (int k = 2; k <= n; k++){
+        double p2 = ((2.0*k - 1.0)*x*p1 - (k - 1.0)*p0)/k;
+        p0 = p1;
+        p1 = p2;
+    }
+    return p1;
+}
+
+//Table P_n(u_t) for n = 0..maxPower and every input, computed once
+void fillLegendreTable(Data &data){
+    const arma::uword L = data.trainingTargetFromInputFile.n_elem;
+    data.legendreTable.set_size(data.maxPowerNonlinearMemory + 1, L);
+    for (arma::uword t = 0; t < L; t++)
+        for (unsigned int n = 0; n <= data.maxPowerNonlinearMemory; n++)
+            data.legendreTable(n, t) = legendreFunction(n, data.trainingTargetFromInputFile[t]);
 }
 
 //Returns 1.0 -  the cumulate distribution function, i.e. it returns the probability that "chi_squared" of "degree N" rolls "x" greater than "value". 
@@ -25,23 +37,14 @@ double getCDFChiSquared(int degrees, double value)
 	return 1.0 - cdf(dist, value);
 }
 
-//Find the threshold for which the 1.0 - "CDF of chi_squared" is less than "probability"
+//Significance threshold: factor * (the value a chi-squared variable with N degrees of freedom exceeds with
+//probability `probability`) / T. For a random target the capacity estimate is approximately chi2(N)/T.
+//(v0.1 found the quantile by a decimal search to within 1e-5; this is the exact quantile.)
 double findThreshold(Data &data, double probability)
 {
-	double precision = 1.0;
-	double value = 0.0;
-	while ( precision > 10e-6)
-	{
-		value += precision;
-		if ( getCDFChiSquared(data.stateMatrix.n_cols, value) < probability)
-		{
-			value -= precision;
-			precision /= 10.0;
-		}
-	}
-
-	return value*4.0/data.stateMatrix.n_rows ;
-
+	chi_squared dist(data.stateMatrix.n_cols);
+	double value = boost::math::quantile(boost::math::complement(dist, probability));
+	return value*data.thresholdFactor/data.stateMatrix.n_rows;
 }
 
 //Returns a matrix of ints, yieldin every combination possible for k legendre polynomials distributed over power n
@@ -110,7 +113,7 @@ void doLoopForOneLegendrePolynomial(Data &data, vector<int> &powerList, ofstream
             for (unsigned int k = 0; k < data.stateMatrix.n_rows; k++){
                 data.trainingTarget(k) = 1.0;
                 for (unsigned int j = 0; j < powerList.size(); j++){
-                    data.trainingTarget(k) *= legendreFunction(powerList[j],data.trainingTargetFromInputFile[k+data.startTargetRow-steps[j]]);
+                    data.trainingTarget(k) *= data.legendreTable(powerList[j], k+data.startTargetRow-steps[j]);
                 }
             }
 
@@ -174,7 +177,11 @@ void calcErrors(Data &data, vector<int> &powerList, ofstream &dataFile, arma::Ma
 //Calculate the nonlinear memory capacity the system
 void calcNonlinearMemory(Data &data){
 
-    data.threshold = findThreshold(data, 10e-6);
+    if (!data.thresholdGiven)
+        data.threshold = findThreshold(data, data.thresholdProbability);
+    if (data.debug)
+        cout << "threshold = " << data.threshold << endl;
+    fillLegendreTable(data);
 
     data.totalMemoryCap = 0.0;
     for (unsigned int i = 0; i < data.stateMatrix.n_cols; i++){
@@ -195,7 +202,17 @@ void calcNonlinearMemory(Data &data){
 
     ofstream data_file_nonlinear_memory;
     data_file_nonlinear_memory.open(data.dataStringNonlinearMemorySavefile);
-    data_file_nonlinear_memory << "STEP DEGREE CAPACITY" << endl;
+    if (!data_file_nonlinear_memory)
+        throw std::runtime_error("cannot write '" + data.dataStringNonlinearMemorySavefile + "'");
+    data_file_nonlinear_memory.precision(data.outputPrecision);
+    // header: one name per column (v0.1 wrote "STEP DEGREE CAPACITY" for 4P+1 columns)
+    const unsigned int P = data.maxPowerNonlinearMemory;
+    for (unsigned int j = 1; j <= P; j++) data_file_nonlinear_memory << "step" << j << " ";
+    for (unsigned int j = 1; j <= P; j++) data_file_nonlinear_memory << "degree" << j << " ";
+    data_file_nonlinear_memory << "capacity ";
+    for (unsigned int j = 1; j <= P; j++) data_file_nonlinear_memory << "total_deg" << j << " ";
+    for (unsigned int j = 1; j <= P; j++) data_file_nonlinear_memory << "pure_deg" << j << (j < P ? " " : "");
+    data_file_nonlinear_memory << endl;
 
     //Looping over every degree
     for (unsigned int power = 1; power <= data.maxPowerNonlinearMemory; power++){
@@ -219,4 +236,12 @@ void calcNonlinearMemory(Data &data){
     }
 
     data_file_nonlinear_memory.close();
+
+    double total = 0.0;
+    cout << "Capacity per degree:";
+    for (unsigned int p = 1; p <= data.maxPowerNonlinearMemory; p++){
+        cout << " " << p << ": " << data.totalMemCapDegrees[p];
+        total += data.totalMemCapDegrees[p];
+    }
+    cout << " | total " << total << " of N = " << data.stateMatrix.n_cols << endl;
 }

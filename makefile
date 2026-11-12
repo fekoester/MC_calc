@@ -1,11 +1,13 @@
-CC = g++
-CFLAGS = -Wall
-CXXFLAGS:=-std=c++17 -O2 
+CXX ?= g++
+CXXFLAGS ?= -std=c++17 -O2 -Wall
+LDLIBS = -larmadillo -llapack -lblas
 
-.PHONY: all MC clean
+.PHONY: all clean
 
-MC: MC.cpp
-	$(CC) $(CFLAGS) $(CXXFLAGS) MC.cpp -o MC -larmadillo -llapack -lblas
+all: MC
+
+MC: MC.cpp Data.h Initialization.h Memory.h
+	$(CXX) $(CXXFLAGS) MC.cpp -o MC $(LDLIBS)
 
 clean:
 	rm -f MC

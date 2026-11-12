@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Armadillo and Boost
+        run: sudo apt-get update && sudo apt-get install -y libarmadillo-dev libboost-dev
+      - name: Build (make and CMake)
+        run: |
+          make
+          cmake -S . -B build && cmake --build build
+      - name: Install Python package
+        run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Test (C++ and Python, including the cross-check)
+        run: pytest -q
